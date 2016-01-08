@@ -11,7 +11,7 @@ env:
   - "NODE_FLAGS='' SCRIPT_FLAGS=''"
 before_script:
 - git submodule update --init --recursive
-script: "npm run build && npm run test"
+script: "npm run lint && npm run clean && npm run build && npm run validate && npm run test"
 branches:
   only:
     - master
