@@ -1,0 +1,17 @@
+# Temp Files
+**/*.log
+**/.docpad.db
+
+# Build Files
+node_modules/
+
+# Private Files
+.env
+
+# Development Files
+.babelrc
+.eslintrc
+.travis*
+Cakefile
+**/src/
+**/test/
