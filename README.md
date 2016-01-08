@@ -1,7 +1,5 @@
 # Ciril
 
-Ciril is a javascript data binding library.
-
 **This library is under active development, so bugs may exist and the API is likely to change significantly.**
 
 ### Why?
@@ -57,4 +55,4 @@ n2.emitChange()
 ### Caveats
 
 #### Synchronization
-Multiple can be synchronized so that changing one's data updates the rest. This is done by cyclically binding the nodes. Ciril doesn't update a node's state more than once during a given update pass. As such, it is up to the user to make sure that composing the transformations in a cycle yields the identity to make sure data is consistent at the end of the pass. It is possible that in the future, we will provide the option to check consistency in cycles at runtime to help debug this.
+Multiple can be synchronized so that changing one's data updates the rest. This is done by cyclically binding the nodes. Ciril doesn't update a node's state more than once during a given update pass. As such, it is up to the user to make sure that composing the transformations in a cycle yields the identity to make sure data is consistent at the end of the pass. It is possible that in the future, we will provide the option to check consistency in cycles at runtime to help debug consistency issues.
