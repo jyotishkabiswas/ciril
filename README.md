@@ -6,7 +6,7 @@ Ciril is a javascript data binding library.
 
 ### Why?
 
-Complex applications contain many sources of data which interact and must be kept consistent as data changes. Ciril provides a way to create bindings between data stores through
+Complex applications contain many sources of data which interact and must be kept consistent as data changes. Ciril provides a way to create bindings between data stores to make sure updating any one store keeps other stores up to date. Optionally, data can be functionally transformed between nodes, allowing the application to use computed values from data.
 
 ### Usage
 
