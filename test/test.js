@@ -3,24 +3,22 @@ var chai = require('chai'),
 
 var ciril = require('..'),
     DataNode = ciril.DataNode,
-    Transformer = ciril.Transformer,
-    FlowGraph = ciril.FlowGraph;
-
+    Transformer = ciril.Transformer;
 
 describe('Basic binding, transform, and update test.', function () {
     var node = new DataNode();
     var node2 = new DataNode();
 
     it('Nodes should be registered on creation', function (done) {
-        expect(FlowGraph.nodeFromUuid(node.uuid)).to.equal(node);
-        expect(FlowGraph.nodeFromUuid(node2.uuid)).to.equal(node2);
+        expect(ciril.nodeFromUuid(node.uuid)).to.equal(node);
+        expect(ciril.nodeFromUuid(node2.uuid)).to.equal(node2);
         done();
     });
 
-    it('FlowGraph should return current node state.', function (done) {
+    it('getNodeState() should return current node state.', function (done) {
         node.setState(1);
-        expect(FlowGraph.getNodeState(node.uuid)).to.equal(node.getState());
-        expect(FlowGraph.getNodeState(node2.uuid)).to.not.exist;
+        expect(ciril.getNodeState(node.uuid)).to.equal(node.getState());
+        expect(ciril.getNodeState(node2.uuid)).to.not.exist;
         done();
     });
 
@@ -35,8 +33,8 @@ describe('Basic binding, transform, and update test.', function () {
             return x / 2;
         })
         .bind(node);
-        expect(FlowGraph.bindings[node.uuid]).to.contain(xf.uuid);
-        expect(FlowGraph.inputs[node2.uuid]).to.contain(xf.uuid);
+        expect(ciril._bindings[node.uuid]).to.contain(xf.uuid);
+        expect(ciril._inputs[node2.uuid]).to.contain(xf.uuid);
 
         done();
     });

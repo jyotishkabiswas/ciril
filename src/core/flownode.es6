@@ -10,27 +10,27 @@ export default class FlowNode {
         this._state = null;
     }
 
-    // // TODO: move to FlowGraph api
-    // synchronize(other) {
-    //     if (typeof transformer === 'undefined') {
-    //         if (!(FlowGraph.bind(this, other) && FlowGraph.bind(other, this)))
-    //             throw new Error('Could not synchronize sources, one or both may be unregistered.');
-    //     } else if (!transformer.invertible()) {
-    //         throw new Error('Transform must have an inverse for synchronization.');
-    //     } else {
-    //         this.transform(transformer).bind(other);
-    //         other.transform(transformer.inverse()).bind(this);
-    //     }
-    //     return this;
-    // }
-
     bind(...destinations) {
-        return this.bindAll(destinations);
+        FlowGraph.bindAll(this, destinations);
+        return destinations[destinations.length - 1];
     }
 
     bindAll(destinations) {
         FlowGraph.bindAll(this, destinations);
         return destinations[destinations.length - 1];
+    }
+
+    synchronize(...nodes) {
+        nodes.reduce((p, c, i, a) => p.bind(c), this);
+        return this;
+    }
+
+    unbind(...destinations) {
+        FlowGraph.unbindAll(destinations);
+    }
+
+    unbindAll(destinations) {
+        FlowGraph.unbindAll(destinations);
     }
 
     update() {
@@ -54,6 +54,10 @@ export default class FlowNode {
             FlowGraph.bind(inp, this);
         }
         return this;
+    }
+
+    remove() {
+
     }
 
     getState() {

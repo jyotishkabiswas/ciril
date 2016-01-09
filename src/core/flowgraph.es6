@@ -21,6 +21,7 @@ class _FlowGraph {
         this.inputs = {};
         // [Promise]
         this._queue = [];
+        // Promise
         this._processing = null;
     }
 
@@ -119,6 +120,50 @@ class _FlowGraph {
     }
 
     /**
+     * Create a cycle of bindings within nodes.
+     * @param nodes
+     *        the nodes to synchronize
+     */
+    synchronize(...nodes) {
+        this.synchronizeAll(nodes);
+    }
+
+    /**
+     * Create a cycle of bindings within nodes.
+     * @param nodes
+     *        a list of the nodes to synchronize
+     */
+    synchronizeAll(nodes) {
+        if (nodes.length <= 1)
+            return false;
+        nodes.reduce((p, c, i, a) => {
+            let next = (i + 1) % nodes.length;
+            return this.bind(c, a[next]);
+        });
+    }
+
+    desynchronize(...nodes) {
+
+    }
+
+    desynchronizeAll(nodes) {
+
+    }
+
+    /**
+     * Set the input order for a node. Used for
+     * ensuring correct ordering of arguments for
+     * transformers.
+     * @param node
+     *        the dependent node
+     * @param inputs
+     *        the input nodes
+     */
+    setInputs(node, ...inputs) {
+        this.inputs[node] = inputs.map(n => n.uuid);
+    }
+
+    /**
      * Get the node keyed by uuid.
      * @param uuid
      *        the node's uuid
@@ -144,68 +189,61 @@ class _FlowGraph {
     /**
      * Should be called when a node's data changes.
      * Recursively updates bound nodes asynchronously.
-     * @param node
-     *        the node to update
+     * @param nodes
+     *        the nodes to update
      * @return
      *        a Promise for the update
      */
-    update(node) {
-        let uuid = node.uuid;
-        let p = new Promise((resolve, reject) => {
-            resolve(this._terminalsFrom(uuid));
-        })
-        .map(uuid => this._update(uuid))
-        .all()
-        .caught(e => console.warn(e));
-        return p;
+    update(...nodes) {
+        return this.updateAll(nodes);
+    }
+
+    /**
+     * Should be called when a node's data changes.
+     * Recursively updates bound nodes asynchronously.
+     * @param nodes
+     *        the nodes to update
+     * @return
+     *        a Promise for the update
+     */
+    updateAll(nodes) {
+        return Promise.map(nodes, node => {
+            let uuid = node.uuid;
+            let p = new Promise((resolve, reject) => {
+                resolve(this._terminalsFrom(uuid));
+            })
+            .map(uuid => this._update(uuid))
+            .all()
+            .caught(e => console.warn(e));
+            return p;
+        }).all(); // TODO: test with inconsistent updates
     }
 
     /**
      * Synchronous version of update(node).
      * Assumes setState() implementations on
      * dependent nodes are synchronous.
-     * @param node
-     *        the node to update
+     * @param nodes
+     *        the nodes to update
      */
-    updateSync(node) {
-        let uuid = node.uuid;
-        this._terminalsFrom(uuid).forEach(
-            id => this._updateSync(id)
-        );
+    updateSync(...nodes) {
+        this.updateAllSync(nodes);
     }
 
     /**
-     * Synchronous version of _updateSync(node).
+     * Synchronous version of update(node).
      * Assumes setState() implementations on
      * dependent nodes are synchronous.
-     * @param node
-     *        the node to update
-     * @api private
+     * @param nodes
+     *        the nodes to update
      */
-    _updateSync(uuid) {
-        let node = this.nodeFromUuid(uuid);
-        node.markDirty(false);
-        this.inputs[uuid].filter(
-            id => this.nodeFromUuid(id).isDirty()
-        )
-        .forEach(id => this._updateSync(id));
-        let args = this.inputs[uuid].map(
-            id => this.getNodeState(id)
-        );
-        node.setState(...args);
-    }
-
-    /**
-     * Set the input order for a node. Used for
-     * ensuring correct ordering of arguments for
-     * transformers.
-     * @param node
-     *        the dependent node
-     * @param inputs
-     *        the input nodes
-     */
-    setInputs(node, ...inputs) {
-        this.inputs[node] = inputs.map(n => n.uuid);
+    updateAllSync(nodes) {
+        nodes.forEach(node => {
+            let uuid = node.uuid;
+            this._terminalsFrom(uuid).forEach(
+                id => this._updateSync(id)
+            );
+        });
     }
 
     /**
@@ -243,6 +281,27 @@ class _FlowGraph {
                 .caught(e => reject(e));
             });
         });
+    }
+
+    /**
+     * Synchronous version of _updateSync(node).
+     * Assumes setState() implementations on
+     * dependent nodes are synchronous.
+     * @param node
+     *        the node to update
+     * @api private
+     */
+    _updateSync(uuid) {
+        let node = this.nodeFromUuid(uuid);
+        node.markDirty(false);
+        this.inputs[uuid].filter(
+            id => this.nodeFromUuid(id).isDirty()
+        )
+        .forEach(id => this._updateSync(id));
+        let args = this.inputs[uuid].map(
+            id => this.getNodeState(id)
+        );
+        node.setState(...args);
     }
 
     /**
