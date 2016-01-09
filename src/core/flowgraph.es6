@@ -276,35 +276,6 @@ class _FlowGraph {
         return terminals;
     }
 
-    // /**
-    //  * Get the nodes dependent on uuid in topological
-    //  * order.
-    //  * @param uuid
-    //  *        the node uuid
-    //  * @return
-    //  *        the nodes in a topological ordering
-    //  */
-    // _orderFrom(uuid) {
-    //     const visited = new Set();
-    //     const stack = [uuid];
-    //     const ordered = [];
-
-    //     // Depth-first search from uuid
-    //     while (stack.length > 0) {
-    //         let current = stack.pop();
-    //         let terminal = true;
-    //         visited.add(current);
-    //         for (let child of this.bindings[current]) {
-    //             if (!visited.has(child)) {
-    //                 terminal = false;
-    //                 stack.push(child);
-    //             }
-    //         }
-    //         ordered.push(current);
-    //     }
-    //     return ordered;
-    // }
-
 }
 
 var FlowGraph = new _FlowGraph();
