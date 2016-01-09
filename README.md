@@ -31,7 +31,7 @@ n1.transform(function(x) {
 Update the nodes, returning a Promise:
 
 ```javascript
-n1.emitChange()
+n1.update()
 .then(function(res){
     console.log(n1.getState()); // 1
     console.log(n2.getState()); // 2
@@ -45,7 +45,7 @@ n2.transform(function(x) {
     return x / 2;
 }).bind(n1); // n1 -> 2*x -> n2 -> x/2 -> n1
 n2.setState(4);
-n2.emitChange()
+n2.update()
 .then(function(res){
     console.log(n1.getState()); // 2
     console.log(n2.getState()); // 4

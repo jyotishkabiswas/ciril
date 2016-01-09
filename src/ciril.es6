@@ -1,3 +1,4 @@
+import 'babel-polyfill';
 import FlowGraph from './core/flowgraph';
 import FlowNode from './core/flownode';
 import Transformer from './core/transformer';

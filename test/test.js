@@ -17,7 +17,7 @@ describe('Basic binding, transform, and update test.', function () {
         done();
     });
 
-    it ('FlowGraph should return current node state.', function (done) {
+    it('FlowGraph should return current node state.', function (done) {
         node.setState(1);
         expect(FlowGraph.getNodeState(node.uuid)).to.equal(node.getState());
         expect(FlowGraph.getNodeState(node2.uuid)).to.not.exist;
@@ -41,24 +41,33 @@ describe('Basic binding, transform, and update test.', function () {
         done();
     });
 
-    it ('Nodes should be in consistent state after async update', function () {
-        return node.emitChange()
+    it('Nodes should be in consistent state after update()', function () {
+        return node.update()
         .then(function (res) {
             expect(node.getState()).to.equal(1);
             expect(node2.getState()).to.equal(2);
         });
     });
 
-    it ('Synchronized nodes should be consistent after update', function () {
+    it('Nodes should be in consistent state after updateSync()', function (done) {
+        node.setState(3);
+        node.updateSync();
+        expect(node.getState()).to.equal(3);
+        expect(node2.getState()).to.equal(6);
+        done();
+    });
+
+    it('Synchronized nodes should be consistent after update()', function () {
         node2.transform(function (x) {
             return x / 2;
         })
         .bind(node);
         node2.setState(4);
-        return node2.emitChange()
+        return node2.update()
         .then(function (res) {
             expect(node.getState()).to.equal(2);
             expect(node2.getState()).to.equal(4);
         });
     });
+
 });

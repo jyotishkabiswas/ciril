@@ -21,6 +21,7 @@ class _FlowGraph {
         this.inputs = {};
         // [Promise]
         this._queue = [];
+        this._processing = null;
     }
 
     /**
@@ -33,11 +34,12 @@ class _FlowGraph {
      *        exist in the store.
      */
     register(node) {
-        if (hasProp(this.nodes, node.uuid))
+        let uuid = node.uuid;
+        if (hasProp(this.nodes, uuid))
             return false;
-        this.nodes[node.uuid] = node;
-        this.bindings[node.uuid] = [];
-        this.inputs[node.uuid] = [];
+        this.nodes[uuid] = node;
+        this.bindings[uuid] = [];
+        this.inputs[uuid] = [];
         return true;
     }
 
@@ -167,13 +169,30 @@ class _FlowGraph {
      */
     updateSync(node) {
         let uuid = node.uuid;
-        let ordered = this._orderFrom(uuid);
-        for (let uuid of ordered) {
-            let args = this.inputs[uuid].map(
-                id => this.getNodeState(id)
-            );
-            node.setState(...args);
-        }
+        this._terminalsFrom(uuid).forEach(
+            id => this._updateSync(id)
+        );
+    }
+
+    /**
+     * Synchronous version of _updateSync(node).
+     * Assumes setState() implementations on
+     * dependent nodes are synchronous.
+     * @param node
+     *        the node to update
+     * @api private
+     */
+    _updateSync(uuid) {
+        let node = this.nodeFromUuid(uuid);
+        node.markDirty(false);
+        this.inputs[uuid].filter(
+            id => this.nodeFromUuid(id).isDirty()
+        )
+        .forEach(id => this._updateSync(id));
+        let args = this.inputs[uuid].map(
+            id => this.getNodeState(id)
+        );
+        node.setState(...args);
     }
 
     /**
@@ -196,6 +215,7 @@ class _FlowGraph {
      *        the terminal uuid
      * @return
      *        a Promise for the update
+     * @api private
      */
     _update(uuid) {
         let node = this.nodeFromUuid(uuid);
@@ -231,6 +251,7 @@ class _FlowGraph {
      *        the node uuid
      * @return
      *        the terminal nodes
+     * @api private
      */
     _terminalsFrom(uuid) {
         const visited = new Set();
@@ -255,35 +276,34 @@ class _FlowGraph {
         return terminals;
     }
 
-    /**
-     * Get the nodes dependent on uuid in topological
-     * order.
-     * @param uuid
-     *        the node uuid
-     * @return
-     *        the nodes in a topological ordering
-     */
-    _orderFrom(uuid) {
-        const visited = new Set();
-        const stack = [uuid];
-        const ordered = [];
+    // /**
+    //  * Get the nodes dependent on uuid in topological
+    //  * order.
+    //  * @param uuid
+    //  *        the node uuid
+    //  * @return
+    //  *        the nodes in a topological ordering
+    //  */
+    // _orderFrom(uuid) {
+    //     const visited = new Set();
+    //     const stack = [uuid];
+    //     const ordered = [];
 
-        // Depth-first search from uuid
-        while (stack.length > 0) {
-            let current = stack.pop();
-            let terminal = true;
-            visited.add(current);
-            for (let child of this.bindings[current]) {
-                if (!visited.has(child)) {
-                    terminal = false;
-                    stack.push(child);
-                    this.nodeFromUuid(child).markDirty(true);
-                }
-            }
-            ordered.push(current);
-        }
-        return ordered;
-    }
+    //     // Depth-first search from uuid
+    //     while (stack.length > 0) {
+    //         let current = stack.pop();
+    //         let terminal = true;
+    //         visited.add(current);
+    //         for (let child of this.bindings[current]) {
+    //             if (!visited.has(child)) {
+    //                 terminal = false;
+    //                 stack.push(child);
+    //             }
+    //         }
+    //         ordered.push(current);
+    //     }
+    //     return ordered;
+    // }
 
 }
 

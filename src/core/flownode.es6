@@ -33,8 +33,12 @@ export default class FlowNode {
         return destinations[destinations.length - 1];
     }
 
-    emitChange() {
+    update() {
         return FlowGraph.update(this);
+    }
+
+    updateSync() {
+        FlowGraph.updateSync(this);
     }
 
     isDirty() {
