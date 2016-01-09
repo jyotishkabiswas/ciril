@@ -1,9 +1,11 @@
-import DataNode from './datanode';
-import Transformer from './transformer';
-import FlowGraph from './flowgraph';
+import FlowGraph from './core/flowgraph';
+import FlowNode from './core/flownode';
+import Transformer from './core/transformer';
+import DataNode from './core/datanode';
 
 module.exports = {
-    DataNode: DataNode,
+    FlowGraph: FlowGraph,
+    FlowNode: FlowNode,
     Transformer: Transformer,
-    FlowGraph: FlowGraph
+    DataNode: DataNode
 }
