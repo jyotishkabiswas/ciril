@@ -37,7 +37,6 @@ module.exports = {
     desynchronize: FlowGraph.desynchronize.bind(FlowGraph),
     desynchronizeAll: FlowGraph.desynchronizeAll.bind(FlowGraph),
 
-    setInputs: FlowGraph.setInputs.bind(FlowGraph),
     nodeFromUuid: FlowGraph.nodeFromUuid.bind(FlowGraph),
     getNodeState: FlowGraph.getNodeState.bind(FlowGraph),
 

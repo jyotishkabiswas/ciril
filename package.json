@@ -7,11 +7,13 @@
     "lint": "eslint src",
     "build": "babel -d lib/ src/",
     "test": "mocha test/**/*",
-    "prepublish": "npm run build",
+    "prepublish": "npm run clean && npm run build && npm run test",
     "clean": "rm -rf lib/*",
     "validate": "npm ls"
   },
   "pre-commit": [
+    "clean",
+    "build",
     "lint",
     "validate",
     "test"

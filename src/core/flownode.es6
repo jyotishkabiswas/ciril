@@ -159,16 +159,6 @@ export default class FlowNode {
     }
 
     /**
-     * Same as ciril.bindInputs(this, ...inputs).
-     */
-    bindInputs(...inputs) {
-        for (inp of inputs) {
-            FlowGraph.bind(inp, this);
-        }
-        return this;
-    }
-
-    /**
      * Same as cirl.bindInputs(this, ...inputs).
      * @param inputs
      *        the input nodes

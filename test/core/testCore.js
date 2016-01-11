@@ -75,7 +75,7 @@ describe('Test binding, transform, and updates.', function () {
         return node.setState(1).update().then(function () {
             expect(node.getState()).to.equal(1);
             expect(node2.getState()).to.equal(4);
-            node.bind(xf).bind(node2);
+            xf.bindInputs(node).bind(node2);
             return node.update().then(function () {
                 expect(node.getState()).to.equal(1);
                 expect(node2.getState()).to.equal(2);

@@ -141,11 +141,11 @@ class _FlowGraph {
             console.warn("bindAllInputs(...): Overwriting existing inputs");
             _inputs.map(
                 id => this.nodeFromUuid(id)
-            ).forEach(inp => this.unbind(inp, node));
+            )
+            .forEach(inp => this.unbind(inp, node));
         }
         for (let inp of inputs)
             this.bind(inp, node);
-        this.setInputs(node, inputs);
     }
 
     /**
@@ -233,19 +233,6 @@ class _FlowGraph {
             this.unbind(p, c);
             return c;
         }, nodes[nodes.length - 1]);
-    }
-
-    /**
-     * Set the input order for a node. Primarily used for
-     * ensuring correct ordering of arguments for
-     * transformers.
-     * @param node
-     *        the dependent node
-     * @param inputs
-     *        the input nodes
-     */
-    setInputs(node, ...inputs) {
-        this.inputs.set(node.uuid, inputs.map(n => n.uuid));
     }
 
     /**
