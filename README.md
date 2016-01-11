@@ -12,11 +12,11 @@ Create a data node:
 
 ```javascript
 var ciril = require('ciril'),
-    DataNode = ciril.DataNode;
+    FlowNode = ciril.FlowNode;
 // create data node with initial state 1.
-var n1 = new DataNode(1);
+var n1 = new FlowNode(1);
 // create another data node with no initial state.
-var n2 = new DataNode();
+var n2 = new FlowNode();
 ```
 
 Link the nodes via a transformer:
