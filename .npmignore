@@ -12,6 +12,8 @@ node_modules/
 .babelrc
 .eslintrc
 .travis*
-Cakefile
+.jshintignore
+.jshintrc
+.gitignore
 **/src/
 **/test/

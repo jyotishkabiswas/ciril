@@ -28,7 +28,7 @@ n1.transform(function(x) {
 .bind(n2); // n1 -> 2*x -> n2
 ```
 
-Update the nodes, returning a Promise:
+Update the nodes, returning a [Promise](http://bluebirdjs.com/docs/why-promises.html):
 
 ```javascript
 n1.update()

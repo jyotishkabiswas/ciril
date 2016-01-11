@@ -1,20 +1,18 @@
 {
   "name": "ciril",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "A javascript data binding library",
   "author": "Jyotishka Biswas <jyotishka.biswas@gmail.com>",
   "scripts": {
     "lint": "eslint src",
     "build": "babel -d lib/ src/",
-    "test": "mocha test",
+    "test": "mocha test/**/*",
     "prepublish": "npm run build",
     "clean": "rm -rf lib/*",
     "validate": "npm ls"
   },
   "pre-commit": [
     "lint",
-    "clean",
-    "build",
     "validate",
     "test"
   ],
@@ -36,6 +34,7 @@
     "babel-polyfill": "^6.3.14",
     "bluebird": "^3.1.1",
     "lodash": "^3.10.1",
+    "object-assign": "^4.0.1",
     "uuid": "^2.0.1"
   },
   "devDependencies": {
@@ -55,10 +54,5 @@
   "preferGlobal": true,
   "private": true,
   "analyze": true,
-  "license": "MIT",
-  "pre-commit": [
-    "lint",
-    "validate",
-    "test"
-  ]
+  "license": "MIT"
 }

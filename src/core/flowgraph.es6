@@ -1,33 +1,32 @@
 import Promise from 'bluebird';
-import difference from 'lodash/array/difference';
-import union from 'lodash/array/union';
-import isFunction from 'lodash/lang/isFunction';
-
+import remove from 'lodash/array/remove';
+import cloneDeep from 'lodash/lang/cloneDeep';
 // renaming
 var hasProp = require('lodash/object/has');
 
 /**
- * Maintains dependences between various data
- * sources and sinks.
+ * Maintains bindings between various nodes, and
+ * manages all node updates. The nodes themselves
+ * are unaware of their bindings -- this information
+ * is kept within the FlowGraph.
+ *
+ * The FlowGraph structure is meant for internal
+ * use. The public API is exposed through the ciril
+ * object.
  */
 class _FlowGraph {
 
     constructor() {
         // uuid --> node
-        this.nodes = {};
+        this.nodes = new Map([]);
+        // uuid --> Set<uuid>
+        this.bindings = new Map([]);
         // uuid --> [uuid]
-        this.bindings = {};
-        // uuid --> [uuid]
-        this.inputs = {};
-        // [Promise]
-        this._queue = [];
-        // Promise
-        this._processing = null;
+        this.inputs = new Map([]);
     }
 
     /**
-     * Associate a node uuid with the node
-     * within the flow graph.
+     * Register the node with this FlowGraph.
      * @param node
      *        the node
      * @return
@@ -35,13 +34,45 @@ class _FlowGraph {
      *        exist in the store.
      */
     register(node) {
-        let uuid = node.uuid;
-        if (hasProp(this.nodes, uuid))
+        if (!hasProp(node, 'uuid'))
             return false;
-        this.nodes[uuid] = node;
-        this.bindings[uuid] = [];
-        this.inputs[uuid] = [];
+        let uuid = node.uuid;
+        if (this.nodes.has(uuid))
+            return false;
+        this.nodes.set(uuid, node);
+        this.bindings.set(uuid, new Set([]));
+        this.inputs.set(uuid, []);
         return true;
+    }
+
+    /**
+     * Remove the given nodes from the FlowGraph.
+     * Connected edges are removed as well.
+     * @param nodes
+     *        the nodes to remove
+     */
+    remove(...nodes) {
+        this.removeAll(nodes);
+    }
+
+    /**
+     * Remove the given nodes from the FlowGraph.
+     * Connected edges are removed as well.
+     * @param nodes
+     *        the nodes to remove
+     */
+    removeAll(nodes) {
+        nodes.forEach(node => {
+            let uuid = node.uuid;
+            this.inputs.get(uuid).map(
+                id => this.nodeFromUuid(id)
+            ).forEach(inp => this.unbind(inp, this));
+            for (let id of this.bindings.get(uuid)) {
+                let dest = this.nodeFromUuid(id);
+                this.unbind(node, dest);
+            }
+            this.nodes.delete(uuid);
+        });
     }
 
     /**
@@ -51,7 +82,8 @@ class _FlowGraph {
      *        the source node
      * @param destinations
      *        the destination nodes
-     * @return true iff source and destinations
+     * @return
+     *        true iff source and destinations
      *        are registered
      */
     bind(source, ...destinations) {
@@ -69,17 +101,51 @@ class _FlowGraph {
      *        are registered
      */
     bindAll(source, destinations) {
-        if (!hasProp(this.nodes, source.uuid))
-            throw new Error(`Can't bind, source ${source} not registered.`)
+        if (!this.nodes.has(source.uuid))
+            throw new Error(`bindAll(...): source not registered.`)
         for (let node of destinations) {
-            if (!hasProp(this.nodes, node.uuid))
-                throw new Error(`Can't bind, destination not registered.`);
-            this.inputs[node.uuid].push(source.uuid);
+            if (!this.nodes.has(node.uuid))
+                throw new Error(`bindAll(...): destination not registered.`);
         }
-        this.bindings[source.uuid] = union(
-            this.bindings[source.uuid],
-            destinations.map(node => node.uuid));
+        for (let node of destinations) {
+            this.inputs.get(node.uuid).push(source.uuid);
+            this.bindings.get(source.uuid).add(node.uuid);
+        }
         return true;
+    }
+
+    /**
+     * Bind the input nodes to the given node, in
+     * the given order.
+     * @param node
+     *        the output node
+     * @param inputs
+     *        the input nodes
+     */
+    bindInputs(node, ...inputs) {
+        this.bindAllInputs(node, inputs);
+    }
+
+    /**
+     * Bind the input nodes to the given node, in
+     * the given order.
+     * @param node
+     *        the output node
+     * @param inputs
+     *        the input nodes
+     */
+    bindAllInputs(node, inputs) {
+        let uuid = node.uuid;
+        let _inputs = this.inputs.get(uuid);
+        if (_inputs.length > 0) {
+            console.warn("bindAllInputs(...): Overwriting existing inputs");
+            _inputs.map(
+                id => this.nodeFromUuid(id)
+            ).forEach(inp => this.unbind(inp, node));
+        }
+        for (let inp of inputs)
+            this.bind(inp, node);
+        this.setInputs(node, inputs);
     }
 
     /**
@@ -107,15 +173,19 @@ class _FlowGraph {
      *        are registered
      */
     unbindAll(source, destinations) {
-        if (!hasProp(this.nodes, source.uuid))
+        if (!this.nodes.has(source.uuid))
             return false;
-        for (let d of destinations) {
-            if (!hasProp(this.nodes), d.uuid)
-                return false;
+        for (let node of destinations) {
+            if (!this.nodes.has(node.uuid)) {
+                console.warn("unbindAll(...): Attempting to unbind unregistered node.")
+                continue;
+            }
+            remove(this.inputs.get(node.uuid),
+                id => id === source.uuid);
+            this.bindings.get(source.uuid).delete(node.uuid);
+            // remove direct reference to input state objects.
+            node.state = cloneDeep(node.state);
         }
-        this.bindings[source.uuid] = difference(
-            this.bindings[source.uuid],
-            destinations.map(node => node.uuid));
         return true;
     }
 
@@ -142,16 +212,31 @@ class _FlowGraph {
         });
     }
 
+    /**
+     * Inverse of this.synchronize(...nodes).
+     * @param nodes
+     *        the nodes to desynchronize
+     */
     desynchronize(...nodes) {
-
-    }
-
-    desynchronizeAll(nodes) {
-
+        this.desynchronizeAll(nodes);
     }
 
     /**
-     * Set the input order for a node. Used for
+     * Inverse of this.synchronizeAll(nodes).
+     * @param nodes
+     *        a list of the nodes to desynchronize
+     */
+    desynchronizeAll(nodes) {
+        if (nodes.length <= 1)
+            return;
+        nodes.reduce((p, c, i, a) => {
+            this.unbind(p, c);
+            return c;
+        }, nodes[nodes.length - 1]);
+    }
+
+    /**
+     * Set the input order for a node. Primarily used for
      * ensuring correct ordering of arguments for
      * transformers.
      * @param node
@@ -160,7 +245,7 @@ class _FlowGraph {
      *        the input nodes
      */
     setInputs(node, ...inputs) {
-        this.inputs[node] = inputs.map(n => n.uuid);
+        this.inputs.set(node.uuid, inputs.map(n => n.uuid));
     }
 
     /**
@@ -171,7 +256,7 @@ class _FlowGraph {
      *        the node keyed by uuid
      */
     nodeFromUuid(uuid) {
-        return hasProp(this.nodes, uuid) ? this.nodes[uuid] : null;
+        return this.nodes.has(uuid) ? this.nodes.get(uuid) : null;
     }
 
     /**
@@ -212,7 +297,7 @@ class _FlowGraph {
             let p = new Promise((resolve, reject) => {
                 resolve(this._terminalsFrom(uuid));
             })
-            .map(uuid => this._update(uuid))
+            .map(id => this._update(id))
             .all()
             .caught(e => console.warn(e));
             return p;
@@ -247,6 +332,15 @@ class _FlowGraph {
     }
 
     /**
+     * Removes all nodes and bindings.
+     */
+    clear() {
+        this.nodes.clear();
+        this.bindings.clear();
+        this.inputs.clear();
+    }
+
+    /**
      * Updates terminal node keyed by uuid, recursively
      * updating dirty nodes when necessary.
      * @param uuid
@@ -257,22 +351,23 @@ class _FlowGraph {
      */
     _update(uuid) {
         let node = this.nodeFromUuid(uuid);
-        // to avoid infinite recursion
+
+        if (!node.isDirty())
+            return;
+
         node.markDirty(false);
 
         // wrap in a promise
         return new Promise((resolve, reject) => {
             // update dirty dependencies first
-            Promise.filter(
-                this.inputs[uuid],
-                id => this.nodeFromUuid(id).isDirty()
-            ).map(id => {
-                return this._update(id);
-            })
+            Promise.map(
+                this.inputs.get(uuid),
+                id => this._update(id)
+            )
             .all()
             // then update node
             .then(res => {
-                let args = this.inputs[uuid].map(
+                let args = this.inputs.get(uuid).map(
                     id => this.getNodeState(id)
                 );
                 // supporting asynchronous setState() functions
@@ -294,11 +389,11 @@ class _FlowGraph {
     _updateSync(uuid) {
         let node = this.nodeFromUuid(uuid);
         node.markDirty(false);
-        this.inputs[uuid].filter(
+        this.inputs.get(uuid).filter(
             id => this.nodeFromUuid(id).isDirty()
         )
         .forEach(id => this._updateSync(id));
-        let args = this.inputs[uuid].map(
+        let args = this.inputs.get(uuid).map(
             id => this.getNodeState(id)
         );
         node.setState(...args);
@@ -316,13 +411,12 @@ class _FlowGraph {
         const visited = new Set();
         const stack = [uuid];
         const terminals = [];
-
         // Depth-first search from uuid
         while (stack.length > 0) {
             let current = stack.pop();
             let terminal = true;
             visited.add(current);
-            for (let child of this.bindings[current]) {
+            for (let child of this.bindings.get(current)) {
                 if (!visited.has(child)) {
                     terminal = false;
                     stack.push(child);

@@ -1,24 +1,34 @@
 import 'babel-polyfill';
 import FlowGraph from './core/flowgraph';
-import FlowNode from './core/flownode';
-import Transformer from './core/transformer';
-import DataNode from './core/datanode';
+import FlowNode, {Transformer} from './core/flownode';
+import createClass, {createMixin} from './factory/classes';
 
 module.exports = {
-    // classes
+
+    // core/flownode.js
     FlowNode: FlowNode,
+
+    // core/transformer.js
     Transformer: Transformer,
-    DataNode: DataNode,
+
+    // FlowGraph API
+    // core/flowgraph.js
 
     // fields for debugging
+    _nodes: FlowGraph.nodes,
     _bindings: FlowGraph.bindings,
     _inputs: FlowGraph.inputs,
 
-    // methods
+    // public methods
     register: FlowGraph.register.bind(FlowGraph),
+    remove: FlowGraph.remove.bind(FlowGraph),
+    removeAll: FlowGraph.removeAll.bind(FlowGraph),
 
     bind: FlowGraph.bind.bind(FlowGraph),
     bindAll: FlowGraph.bindAll.bind(FlowGraph),
+    bindInputs: FlowGraph.bindInputs.bind(FlowGraph),
+    bindAllInputs: FlowGraph.bindAllInputs.bind(FlowGraph),
+
     unbind: FlowGraph.unbind.bind(FlowGraph),
     unbindAll: FlowGraph.unbindAll.bind(FlowGraph),
 
@@ -34,6 +44,13 @@ module.exports = {
     update: FlowGraph.update.bind(FlowGraph),
     updateAll: FlowGraph.updateAll.bind(FlowGraph),
     updateSync: FlowGraph.updateSync.bind(FlowGraph),
-    updateAllSync: FlowGraph.updateAllSync.bind(FlowGraph)
+    updateAllSync: FlowGraph.updateAllSync.bind(FlowGraph),
 
+    clear: FlowGraph.clear.bind(FlowGraph),
+
+    // Factory methods
+
+    // factory/classes.js
+    createClass: createClass,
+    createMixin: createMixin
 }
