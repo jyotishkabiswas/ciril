@@ -1,4 +1,4 @@
-import 'babel-polyfill';
+if(!global._babelPolyfill) { require('babel-polyfill'); }
 import FlowGraph from './core/flowgraph';
 import FlowNode, {Transformer} from './core/flownode';
 import createClass, {createMixin} from './factory/classes';
