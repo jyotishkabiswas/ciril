@@ -399,7 +399,7 @@ class _FlowGraph {
                 );
                 // supporting asynchronous setState() functions
                 Promise.resolve(node.setState(...args))
-                .then(resolve())
+                .then(res => resolve())
                 .caught(e => reject(e));
             });
         });
