@@ -384,25 +384,20 @@ class _FlowGraph {
 
         node.markDirty(false);
 
-        // wrap in a promise
-        return new Promise((resolve, reject) => {
-            // update dirty dependencies first
-            Promise.map(
-                this.inputs.get(uuid),
-                id => this._update(id)
-            )
-            .all()
-            // then update node
-            .then(res => {
-                let args = this.inputs.get(uuid).map(
-                    id => this.getNodeState(id)
-                );
-                // supporting asynchronous setState() functions
-                Promise.resolve(node.setState(...args))
-                .then(res => resolve())
-                .caught(e => reject(e));
-            });
-        });
+        return Promise.map(
+            this.inputs.get(uuid),
+            id => this._update(id)
+        )
+        .all()
+        // then update node
+        .then(res => {
+            let args = this.inputs.get(uuid).map(
+                id => this.getNodeState(id)
+            );
+            // supporting asynchronous setState() functions
+            return Promise.resolve(node.setState(...args));
+        })
+        .caught(e => console.warn(e));
     }
 
     /**
