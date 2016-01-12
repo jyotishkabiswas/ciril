@@ -1,6 +1,6 @@
 {
   "name": "ciril",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "A javascript data binding library",
   "author": "Jyotishka Biswas <jyotishka.biswas@gmail.com>",
   "scripts": {
