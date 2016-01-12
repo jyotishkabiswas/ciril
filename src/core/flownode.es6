@@ -4,12 +4,13 @@ import uuid from 'uuid';
 import isEqual from 'lodash/lang/isEqual';
 
 
-function mergeProps(target, ...sources) {
+function conservativeMerge(target, ...sources) {
     sources.forEach(source => {
         Object.getOwnPropertyNames(source).forEach(name => {
-            if (name === 'constructor')
+            if (name === 'constructor' || target[name])
                 return;
-            target[name] = source[name];
+            Object.defineProperty(target, name,
+                Object.getOwnPropertyDescriptor(source, name));
         });
     });
 }
@@ -27,9 +28,11 @@ function createSimpleWrapper(obj) {
 function createWrapper(obj) {
     if (!obj.hasOwnProperty('state'))
         return createSimpleWrapper(obj);
-    let node = new FlowNode();
-    mergeProps(node, obj);
-    return node;
+    let node = new FlowNode(null, false);
+    // Add FlowNode fields
+    conservativeMerge(obj, node, FlowNode.prototype);
+    obj.register();
+    return obj;
 }
 
 /**
@@ -55,10 +58,11 @@ export function wrap(obj) {
  * Constructor for creating a FlowNode. Should be
  * called if creating a mixin class with FlowNode.
  */
-export function NodeConstructor(initialState=null) {
+export function NodeConstructor(initialState=null, register=true) {
     this._dirty = false;
     this.uuid = uuid.v4();
-    FlowGraph.register(this);
+    if (register)
+        FlowGraph.register(this);
     this.state = initialState;
 }
 
@@ -78,8 +82,8 @@ export default class FlowNode {
      * On creation, a FlowNode registers itself
      * with the FlowGraph.
      */
-    constructor(initialState=null) {
-        NodeConstructor.call(this, initialState);
+    constructor(initialState=null, register=true) {
+        NodeConstructor.call(this, initialState, register);
     }
 
     /**

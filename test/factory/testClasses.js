@@ -7,14 +7,15 @@ var Ciril = require('../..'),
 
 
 describe('Test factory methods for creating FlowNode types.', function () {
-    var MyFlowClass = Ciril.createClass({
-        setState: function () {
-            this.state = 5;
-            return "SUCCESS";
-        }
-    });
+    var MyFlowClass;
 
     it ('Ciril.createClass() should return a subclass of FlowNode', function (done) {
+        MyFlowClass = Ciril.createClass({
+                setState: function () {
+                    this.state = 5;
+                    return "SUCCESS";
+                }
+            });
         expect(typeof MyFlowClass).to.equal('function');
         var myInstance = new MyFlowClass(5);
         expect(myInstance instanceof MyFlowClass).to.be.true;
@@ -50,9 +51,8 @@ describe('Test factory methods for creating FlowNode types.', function () {
 
     OtherClass.prototype.constructor = OtherClass;
 
-    var MyMixin = Ciril.createMixin(OtherClass);
-
     it ('Ciril.createMixin() should return a mixin with FlowNode', function () {
+        var MyMixin = Ciril.createMixin(OtherClass);
         expect(typeof MyMixin).to.equal('function');
         var instance = new MyMixin();
         expect(instance instanceof MyMixin).to.be.true;

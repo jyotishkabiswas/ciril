@@ -580,15 +580,15 @@ var _FlowGraph = function () {
 
             var p = _bluebird2.default.map(nodes, function (node) {
                 var uuid = node.uuid;
-                var p = new _bluebird2.default(function (resolve, reject) {
+                return new _bluebird2.default(function (resolve, reject) {
                     resolve(_this5._terminalsFrom(uuid));
                 }).map(function (id) {
                     return _this5._update(id);
-                }).all().caught(function (e) {
-                    return console.warn(e);
-                });
-                return p;
-            }).all(); // TODO: test with inconsistent updates
+                }).all();
+            }).all() // TODO: test with inconsistent updates
+            .caught(function (e) {
+                return console.warn(e.stack);
+            });
             this.pending.add(p);
             return p.then(function (res) {
                 return _this5.pending.delete(p);
@@ -853,15 +853,15 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-function mergeProps(target) {
+function conservativeMerge(target) {
     for (var _len = arguments.length, sources = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
         sources[_key - 1] = arguments[_key];
     }
 
     sources.forEach(function (source) {
         Object.getOwnPropertyNames(source).forEach(function (name) {
-            if (name === 'constructor') return;
-            target[name] = source[name];
+            if (name === 'constructor' || target[name]) return;
+            Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
         });
     });
 }
@@ -877,9 +877,11 @@ function createSimpleWrapper(obj) {
 
 function createWrapper(obj) {
     if (!obj.hasOwnProperty('state')) return createSimpleWrapper(obj);
-    var node = new FlowNode();
-    mergeProps(node, obj);
-    return node;
+    var node = new FlowNode(null, false);
+    // Add FlowNode fields
+    conservativeMerge(obj, node, FlowNode.prototype);
+    obj.register();
+    return obj;
 }
 
 /**
@@ -907,10 +909,11 @@ function wrap(obj) {
  */
 function NodeConstructor() {
     var initialState = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+    var register = arguments.length <= 1 || arguments[1] === undefined ? true : arguments[1];
 
     this._dirty = false;
     this.uuid = _uuid2.default.v4();
-    _flowgraph2.default.register(this);
+    if (register) _flowgraph2.default.register(this);
     this.state = initialState;
 }
 
@@ -934,10 +937,11 @@ var FlowNode = function () {
 
     function FlowNode() {
         var initialState = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+        var register = arguments.length <= 1 || arguments[1] === undefined ? true : arguments[1];
 
         _classCallCheck(this, FlowNode);
 
-        NodeConstructor.call(this, initialState);
+        NodeConstructor.call(this, initialState, register);
     }
 
     /**
@@ -1315,6 +1319,7 @@ function createMixin(Constructor) {
     if (typeof Constructor !== 'function') throw new Error('createMixin(...): argument ' + ('should be function, got ' + (typeof Constructor === 'undefined' ? 'undefined' : _typeof(Constructor))));
     var getInitialState = Constructor.prototype.getInitialState;
     var initialState = typeof getInitialState === 'function' ? getInitialState.apply(this) : null;
+    var register = Constructor.prototype.registerOnCreate || true;
 
     var Mixin = function (_Constructor) {
         _inherits(Mixin, _Constructor);
@@ -1335,7 +1340,7 @@ function createMixin(Constructor) {
     var proto = Mixin.prototype;
     // override constructor
     Mixin = function Mixin() {
-        _flownode.NodeConstructor.call(this, initialState);
+        _flownode.NodeConstructor.call(this, initialState, register);
         Constructor.apply(this, arguments);
     };
     // copy back prototype

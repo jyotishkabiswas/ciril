@@ -51,7 +51,7 @@ describe('#Ciril.wrap()', function () {
 
     it('Wrapped object methods should override FlowNode methods', function (done) {
         wrapped = Ciril.wrap(obj);
-        expect(wrapped instanceof FlowNode).to.be.true;
+        expect(wrapped instanceof FlowNode).to.be.false;
         expect(wrapped.getState()).to.equal("hello");
         wrapped.setState("goodbye");
         expect(wrapped.getState()).to.equal("goodbye");

@@ -40,6 +40,7 @@ export function createMixin(Constructor) {
     let getInitialState = Constructor.prototype.getInitialState;
     const initialState = typeof getInitialState === 'function' ?
         getInitialState.apply(this) : null;
+    const register = Constructor.prototype.registerOnCreate || true;
 
     class Mixin extends Constructor {};
 
@@ -48,7 +49,7 @@ export function createMixin(Constructor) {
     let proto = Mixin.prototype;
     // override constructor
     Mixin = function () {
-        NodeConstructor.call(this, initialState);
+        NodeConstructor.call(this, initialState, register);
         Constructor.apply(this, arguments);
     }
     // copy back prototype

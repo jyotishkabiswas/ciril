@@ -285,14 +285,14 @@ class _FlowGraph {
     updateAll(nodes) {
         let p = Promise.map(nodes, node => {
             let uuid = node.uuid;
-            let p = new Promise((resolve, reject) => {
+            return new Promise((resolve, reject) => {
                 resolve(this._terminalsFrom(uuid));
             })
             .map(id => this._update(id))
-            .all()
-            .caught(e => console.warn(e));
-            return p;
-        }).all(); // TODO: test with inconsistent updates
+            .all();
+        })
+        .all() // TODO: test with inconsistent updates
+        .caught(e => console.warn(e.stack));
         this.pending.add(p);
         return p.then(res => this.pending.delete(p));
     }
