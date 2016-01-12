@@ -11,7 +11,7 @@ var hasProp = require('lodash/object/has');
  * is kept within the FlowGraph.
  *
  * The FlowGraph structure is meant for internal
- * use. The public API is exposed through the ciril
+ * use. The public API is exposed through the Ciril
  * object.
  */
 class _FlowGraph {
@@ -23,6 +23,8 @@ class _FlowGraph {
         this.bindings = new Map([]);
         // uuid --> [uuid]
         this.inputs = new Map([]);
+        // Set<Promise>
+        this.pending = new Set([]);
     }
 
     /**
@@ -35,14 +37,16 @@ class _FlowGraph {
      */
     register(node) {
         if (!hasProp(node, 'uuid'))
-            return false;
+            throw new Error('register(node): node must ' +
+                'have a uuid.');
         let uuid = node.uuid;
         if (this.nodes.has(uuid))
-            return false;
+            throw new Error('register(node): a node with ' +
+                'the given uuid is already registered, ' +
+                'try generating a new one.');
         this.nodes.set(uuid, node);
         this.bindings.set(uuid, new Set([]));
         this.inputs.set(uuid, []);
-        return true;
     }
 
     /**
@@ -101,10 +105,10 @@ class _FlowGraph {
      *        are registered
      */
     bindAll(source, destinations) {
-        if (!this.nodes.has(source.uuid))
+        if (!this.isRegistered(source))
             throw new Error(`bindAll(...): source not registered.`)
         for (let node of destinations) {
-            if (!this.nodes.has(node.uuid))
+            if (!this.isRegistered(node))
                 throw new Error(`bindAll(...): destination not registered.`);
         }
         for (let node of destinations) {
@@ -279,7 +283,7 @@ class _FlowGraph {
      *        a Promise for the update
      */
     updateAll(nodes) {
-        return Promise.map(nodes, node => {
+        let p = Promise.map(nodes, node => {
             let uuid = node.uuid;
             let p = new Promise((resolve, reject) => {
                 resolve(this._terminalsFrom(uuid));
@@ -289,6 +293,8 @@ class _FlowGraph {
             .caught(e => console.warn(e));
             return p;
         }).all(); // TODO: test with inconsistent updates
+        this.pending.add(p);
+        return p.then(res => this.pending.delete(p));
     }
 
     /**
@@ -319,12 +325,46 @@ class _FlowGraph {
     }
 
     /**
-     * Removes all nodes and bindings.
+     * Removes all nodes and bindings. Completes
+     * Pending updates first.
+     * @param safe
+     *        if safe, pending updates will
+     *        be completed before FlowGraph is
+     *        cleared.
+     * @return
+     *         a Promise for the clear, void if !safe
      */
-    clear() {
+    clear(safe=true) {
+        if (safe) {
+            // Finish remaining updates.
+            return this.flush().then(res => this._clear())
+            .caught(e => {
+                console.warn(e);
+                this._clear();
+            });
+        } else {
+            this._clear();
+        }
+    }
+
+    /**
+     * Return a promise for the completion of all pending
+     * promises.
+     * @return
+     *        a promise for the completion.
+     */
+    flush() {
+        return Promise.all(Array.from(this.pending));
+    }
+
+    /**
+     * Clear this FlowGraph.
+     */
+    _clear() {
         this.nodes.clear();
         this.bindings.clear();
         this.inputs.clear();
+        this.pending.clear();
     }
 
     /**
@@ -414,6 +454,10 @@ class _FlowGraph {
                 terminals.push(current);
         }
         return terminals;
+    }
+
+    isRegistered(node) {
+        return this.nodes.has(node.uuid);
     }
 
 }

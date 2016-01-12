@@ -4,6 +4,53 @@ import uuid from 'uuid';
 import isEqual from 'lodash/lang/isEqual';
 
 
+function mergeProps(target, ...sources) {
+    sources.forEach(source => {
+        Object.getOwnPropertyNames(source).forEach(name => {
+            if (name === 'constructor')
+                return;
+            target[name] = source[name];
+        });
+    });
+}
+
+
+function createTransformer(fn) {
+    return new Transformer(fn);
+}
+
+function createSimpleWrapper(obj) {
+    let node = new FlowNode(obj);
+    return node;
+}
+
+function createWrapper(obj) {
+    if (!obj.hasOwnProperty('state'))
+        return createSimpleWrapper(obj);
+    let node = new FlowNode();
+    mergeProps(node, obj);
+    return node;
+}
+
+/**
+ * Wrap the given object or function or value in a FlowNode.
+ * @param obj
+ *        the object, function, or value to wrap
+ * @return
+ *        the wrapper FlowNode
+ */
+export function wrap(obj) {
+    if (obj instanceof FlowNode)
+        return obj.register();
+    switch (typeof obj) {
+        case 'function': return createTransformer(obj);
+        case 'object': return createWrapper(obj);
+        default:
+            return createSimpleWrapper(obj);
+    }
+}
+
+
 /**
  * Constructor for creating a FlowNode. Should be
  * called if creating a mixin class with FlowNode.
@@ -36,10 +83,18 @@ export default class FlowNode {
     }
 
     /**
-     * Same as ciril.register(this).
+     * Same as Ciril.register(this).
      */
     register() {
         FlowGraph.register(this);
+        return this;
+    }
+
+    /**
+     * Same as Ciril.isRegistered(this).
+     */
+    isRegistered() {
+        return FlowGraph.isRegistered(this);
     }
 
     /**
@@ -56,31 +111,33 @@ export default class FlowNode {
     };
 
     /**
-     * Same as ciril.bind(this, ...destinations)
+     * Same as Ciril.bind(this, ...destinations)
      * @param destinations
      *        the destination nodes
      * @return
      *        the last node in destinations
      */
     bind(...destinations) {
-        FlowGraph.bindAll(this, destinations);
-        return destinations[destinations.length - 1];
+        return this.bindAll(destinations);
     }
 
     /**
-     * Same as ciril.bindAll(this, ...destinations)
+     * Same as Ciril.bindAll(this, ...destinations)
      * @param destinations
      *        the destination nodes
      * @return
      *        the last node in destinations
      */
     bindAll(destinations) {
-        FlowGraph.bindAll(this, destinations);
-        return destinations[destinations.length - 1];
+        let dests = destinations.map(
+            e => FlowGraph.isRegistered(e) ? e : wrap(e)
+        );
+        FlowGraph.bindAll(this, dests);
+        return dests[dests.length - 1];
     }
 
     /**
-     * Same as ciril.synchronize(this, ..nodes).
+     * Same as Ciril.synchronize(this, ..nodes).
      * @param nodes
      *        the nodes to synchronize with
      * @return
@@ -92,7 +149,7 @@ export default class FlowNode {
     }
 
     /**
-     * Same as ciril.synchronize(this, ..nodes).
+     * Same as Ciril.synchronize(this, ..nodes).
      * @param nodes
      *        the nodes to synchronize with
      * @return
@@ -104,7 +161,7 @@ export default class FlowNode {
     }
 
     /**
-     * Same as ciril.unbind(this, ...destinations).
+     * Same as Ciril.unbind(this, ...destinations).
      * @param destinations
      *        the destination nodes
      */
@@ -113,7 +170,7 @@ export default class FlowNode {
     }
 
     /**
-     * Same as ciril.unbindAll(this, destinations).
+     * Same as Ciril.unbindAll(this, destinations).
      * @param destinations
      */
     unbindAll(destinations) {
@@ -121,14 +178,14 @@ export default class FlowNode {
     }
 
     /**
-     * Same as ciril.update(this).
+     * Same as Ciril.update(this).
      */
     update() {
         return FlowGraph.update(this);
     }
 
     /**
-     * Same as ciril.updateSync(this).
+     * Same as Ciril.updateSync(this).
      */
     updateSync() {
         FlowGraph.updateSync(this);
@@ -149,7 +206,7 @@ export default class FlowNode {
      * Mark this node as dirty or clean.
      * Be careful using this method, as it
      * affects the update algorithm. It is
-     * meant to be used by ciril for
+     * meant to be used by Ciril for
      * bookkeeping purposes.
      * @param dirty
      *        true iff marking dirty
@@ -171,7 +228,7 @@ export default class FlowNode {
     }
 
     /**
-     * Same as ciril.bindAllInputs(this, inputs).
+     * Same as Ciril.bindAllInputs(this, inputs).
      * @param inputs
      *        the input nodes
      * @return
@@ -184,7 +241,7 @@ export default class FlowNode {
 
 
     /**
-     * Same as ciril.remove(this).
+     * Same as Ciril.remove(this).
      */
     remove() {
         FlowGraph.remove(this);

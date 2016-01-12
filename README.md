@@ -24,15 +24,13 @@ Link the nodes via a transformer:
 ```javascript
 n1.transform(function(x) {
     return 2 * x;
-})
-.bind(n2); // n1 -> 2*x -> n2
+}).bind(n2); // n1 -> 2*x -> n2
 ```
 
 Update the nodes, returning a [Promise](http://bluebirdjs.com/docs/why-promises.html):
 
 ```javascript
-n1.update()
-.then(function(res){
+n1.update().then(function(res){
     console.log(n1.getState()); // 1
     console.log(n2.getState()); // 2
 });
@@ -45,8 +43,7 @@ n2.transform(function(x) {
     return x / 2;
 }).bind(n1); // n1 -> 2*x -> n2 -> x/2 -> n1
 n2.setState(4);
-n2.update()
-.then(function(res){
+n2.update().then(function(res){
     console.log(n1.getState()); // 2
     console.log(n2.getState()); // 4
 });

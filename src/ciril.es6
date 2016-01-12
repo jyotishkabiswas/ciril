@@ -1,15 +1,14 @@
 if(!global._babelPolyfill) { require('babel-polyfill'); }
 import FlowGraph from './core/flowgraph';
-import FlowNode, {Transformer} from './core/flownode';
+import FlowNode, {Transformer, wrap} from './core/flownode';
 import createClass, {createMixin} from './factory/classes';
 
-module.exports = {
+let Ciril = {
 
     // core/flownode.js
     FlowNode: FlowNode,
-
-    // core/transformer.js
     Transformer: Transformer,
+    wrap: wrap,
 
     // FlowGraph API
     // core/flowgraph.js
@@ -21,6 +20,7 @@ module.exports = {
 
     // public methods
     register: FlowGraph.register.bind(FlowGraph),
+    isRegistered: FlowGraph.isRegistered.bind(FlowGraph),
     remove: FlowGraph.remove.bind(FlowGraph),
     removeAll: FlowGraph.removeAll.bind(FlowGraph),
 
@@ -45,6 +45,7 @@ module.exports = {
     updateSync: FlowGraph.updateSync.bind(FlowGraph),
     updateAllSync: FlowGraph.updateAllSync.bind(FlowGraph),
 
+    flush: FlowGraph.flush.bind(FlowGraph),
     clear: FlowGraph.clear.bind(FlowGraph),
 
     // Factory methods
@@ -53,3 +54,5 @@ module.exports = {
     createClass: createClass,
     createMixin: createMixin
 }
+
+module.exports = Ciril;
