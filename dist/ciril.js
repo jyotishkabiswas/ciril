@@ -211,6 +211,7 @@ var _FlowGraph = function () {
                     }
                 }
 
+                node.onRemove();
                 _this.nodes.delete(uuid);
             });
         }
@@ -287,6 +288,8 @@ var _FlowGraph = function () {
 
                     this.inputs.get(node.uuid).push(source.uuid);
                     this.bindings.get(source.uuid).add(node.uuid);
+                    node.onBindInput(source);
+                    source.onBind(node);
                 }
             } catch (err) {
                 _didIteratorError3 = true;
@@ -423,6 +426,8 @@ var _FlowGraph = function () {
                         console.warn("unbindAll(...): Attempting to unbind unregistered node.");
                         continue;
                     }
+                    node.onUnbindInput(source);
+                    source.onUnbind(node);
                     (0, _remove2.default)(this.inputs.get(node.uuid), function (id) {
                         return id === source.uuid;
                     });
@@ -1210,6 +1215,51 @@ var FlowNode = function () {
             this.state = args[0];
             return this;
         }
+
+        /**
+         * Called before node is removed.
+         * Should be overriden.
+         */
+
+    }, {
+        key: 'onRemove',
+        value: function onRemove() {}
+
+        /**
+         * Called before an input is unbound.
+         * Should be overriden.
+         */
+
+    }, {
+        key: 'onUnbindInput',
+        value: function onUnbindInput(input) {}
+
+        /**
+         * Called after an input is bound.
+         * Should be overriden.
+         */
+
+    }, {
+        key: 'onBindInput',
+        value: function onBindInput(input) {}
+
+        /**
+         * Called before an output is unbound.
+         * Should be overriden.
+         */
+
+    }, {
+        key: 'onUnbind',
+        value: function onUnbind(node) {}
+
+        /**
+         * Called after an output is bound.
+         * Should be overriden.
+         */
+
+    }, {
+        key: 'onBind',
+        value: function onBind(node) {}
     }]);
 
     return FlowNode;

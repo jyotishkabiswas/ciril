@@ -278,6 +278,46 @@ export default class FlowNode {
         this.state = args[0];
         return this;
     }
+
+    /**
+     * Called before node is removed.
+     * Should be overriden.
+     */
+    onRemove() {
+
+    }
+
+    /**
+     * Called before an input is unbound.
+     * Should be overriden.
+     */
+    onUnbindInput(input) {
+
+    }
+
+    /**
+     * Called after an input is bound.
+     * Should be overriden.
+     */
+    onBindInput(input) {
+
+    }
+
+    /**
+     * Called before an output is unbound.
+     * Should be overriden.
+     */
+    onUnbind(node) {
+
+    }
+
+    /**
+     * Called after an output is bound.
+     * Should be overriden.
+     */
+    onBind(node) {
+
+    }
 }
 
 /**

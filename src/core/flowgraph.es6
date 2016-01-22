@@ -75,6 +75,7 @@ class _FlowGraph {
                 let dest = this.nodeFromUuid(id);
                 this.unbind(node, dest);
             }
+            node.onRemove();
             this.nodes.delete(uuid);
         });
     }
@@ -114,6 +115,8 @@ class _FlowGraph {
         for (let node of destinations) {
             this.inputs.get(node.uuid).push(source.uuid);
             this.bindings.get(source.uuid).add(node.uuid);
+            node.onBindInput(source);
+            source.onBind(node);
         }
         return true;
     }
@@ -184,6 +187,8 @@ class _FlowGraph {
                 console.warn("unbindAll(...): Attempting to unbind unregistered node.")
                 continue;
             }
+            node.onUnbindInput(source);
+            source.onUnbind(node);
             remove(this.inputs.get(node.uuid),
                 id => id === source.uuid);
             this.bindings.get(source.uuid).delete(node.uuid);
