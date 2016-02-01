@@ -54,16 +54,25 @@ export function wrap(obj) {
 }
 
 
+
 /**
  * Constructor for creating a FlowNode. Should be
  * called if creating a mixin class with FlowNode.
  */
 export function NodeConstructor(initialState=null, register=true) {
-    this._dirty = false;
-    this.uuid = uuid.v4();
+    Object.defineProperty(this, 'dirty', {
+        writable: true,
+        value: false
+    });
+    Object.defineProperty(this, 'uuid', {
+        value: uuid.v4(),
+    });
+    Object.defineProperty(this, 'state', {
+        writable: true,
+        value: initialState
+    });
     if (register)
         FlowGraph.register(this);
-    this.state = initialState;
 }
 
 /**
@@ -203,7 +212,7 @@ export default class FlowNode {
      *        true iff the node is dirty.
      */
     isDirty() {
-        return this._dirty;
+        return this.dirty;
     }
 
     /**
@@ -216,7 +225,7 @@ export default class FlowNode {
      *        true iff marking dirty
      */
     markDirty(dirty) {
-        this._dirty = dirty;
+        this.dirty = dirty;
     }
 
     /**

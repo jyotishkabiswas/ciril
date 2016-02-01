@@ -916,10 +916,18 @@ function NodeConstructor() {
     var initialState = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
     var register = arguments.length <= 1 || arguments[1] === undefined ? true : arguments[1];
 
-    this._dirty = false;
-    this.uuid = _uuid2.default.v4();
+    Object.defineProperty(this, 'dirty', {
+        writable: true,
+        value: false
+    });
+    Object.defineProperty(this, 'uuid', {
+        value: _uuid2.default.v4()
+    });
+    Object.defineProperty(this, 'state', {
+        writable: true,
+        value: initialState
+    });
     if (register) _flowgraph2.default.register(this);
-    this.state = initialState;
 }
 
 /**
@@ -1117,7 +1125,7 @@ var FlowNode = function () {
     }, {
         key: 'isDirty',
         value: function isDirty() {
-            return this._dirty;
+            return this.dirty;
         }
 
         /**
@@ -1133,7 +1141,7 @@ var FlowNode = function () {
     }, {
         key: 'markDirty',
         value: function markDirty(dirty) {
-            this._dirty = dirty;
+            this.dirty = dirty;
         }
 
         /**
