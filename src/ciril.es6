@@ -3,7 +3,7 @@ import FlowGraph from './core/flowgraph';
 import FlowNode, {Transformer, wrap} from './core/flownode';
 import createClass, {createMixin} from './factory/classes';
 
-let Ciril = {
+const Ciril = {
 
     // core/flownode.js
     FlowNode: FlowNode,
@@ -12,6 +12,8 @@ let Ciril = {
 
     // FlowGraph API
     // core/flowgraph.js
+
+    FlowGraph: FlowGraph,
 
     // fields for debugging
     _nodes: FlowGraph.nodes,

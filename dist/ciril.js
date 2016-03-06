@@ -30,6 +30,8 @@ var Ciril = {
     // FlowGraph API
     // core/flowgraph.js
 
+    FlowGraph: _flowgraph2.default,
+
     // fields for debugging
     _nodes: _flowgraph2.default.nodes,
     _bindings: _flowgraph2.default.bindings,

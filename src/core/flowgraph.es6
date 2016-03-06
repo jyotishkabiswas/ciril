@@ -462,5 +462,5 @@ class _FlowGraph {
 
 }
 
-var FlowGraph = new _FlowGraph();
+const FlowGraph = new _FlowGraph();
 export default FlowGraph;
