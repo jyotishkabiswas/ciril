@@ -297,7 +297,6 @@ class _FlowGraph {
             .all();
         })
         .all() // TODO: test with inconsistent updates
-        .caught(e => console.warn(e.stack));
         this.pending.add(p);
         return p.then(res => this.pending.delete(p));
     }
@@ -344,7 +343,7 @@ class _FlowGraph {
             // Finish remaining updates.
             return this.flush().then(res => this._clear())
             .caught(e => {
-                console.warn(e);
+                console.warn(e.stack);
                 this._clear();
             });
         } else {
@@ -385,24 +384,27 @@ class _FlowGraph {
         let node = this.nodeFromUuid(uuid);
 
         if (!node.isDirty())
-            return;
+            return Promise.resolve(false)
 
         node.markDirty(false);
 
         return Promise.map(
-            this.inputs.get(uuid),
+            this.inputs.get(uuid).filter(uuid => this.nodeFromUuid(uuid).isDirty()),
             id => this._update(id)
         )
         .all()
         // then update node
         .then(res => {
-            let args = this.inputs.get(uuid).map(
-                id => this.getNodeState(id)
-            );
-            // supporting asynchronous setState() functions
-            return Promise.resolve(node.setState(...args));
+            let inputs = this.inputs.get(uuid)
+            let changed = inputs.length > 0 ? inputs.reduce((p, uuid, i, a) => p || this.nodeFromUuid(uuid).changed) : false
+            if (changed) {
+                let args = inputs.map(id => this.getNodeState(id))
+                // supporting asynchronous setState() functions
+                return Promise.resolve(node.setState.apply(node, args))
+            }
+            node.changed = false
+            return Promise.resolve(false)
         })
-        .caught(e => console.warn(e));
     }
 
     /**
@@ -414,16 +416,22 @@ class _FlowGraph {
      * @api private
      */
     _updateSync(uuid) {
-        let node = this.nodeFromUuid(uuid);
-        node.markDirty(false);
-        this.inputs.get(uuid).filter(
+        let node = this.nodeFromUuid(uuid)
+        if (!node.isDirty())
+            return false
+        node.markDirty(false)
+        let upstream = this.inputs.get(uuid).filter(
             id => this.nodeFromUuid(id).isDirty()
         )
-        .forEach(id => this._updateSync(id));
-        let args = this.inputs.get(uuid).map(
-            id => this.getNodeState(id)
-        );
-        node.setState(...args);
+        .map(id => this._updateSync(id))
+        let inputs = this.inputs.get(uuid)
+        let changed = inputs.length > 0 ? inputs.reduce((p, uuid, i, a) => p || this.nodeFromUuid(uuid).changed) : false
+        if (changed) {
+            let args = inputs.map(id => this.getNodeState(id))
+            return node.setState(...args)
+        }
+        node.changed = false
+        return false
     }
 
     /**

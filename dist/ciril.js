@@ -592,10 +592,7 @@ var _FlowGraph = function () {
                 }).map(function (id) {
                     return _this5._update(id);
                 }).all();
-            }).all() // TODO: test with inconsistent updates
-            .caught(function (e) {
-                return console.warn(e.stack);
-            });
+            }).all(); // TODO: test with inconsistent updates
             this.pending.add(p);
             return p.then(function (res) {
                 return _this5.pending.delete(p);
@@ -664,7 +661,7 @@ var _FlowGraph = function () {
                 return this.flush().then(function (res) {
                     return _this7._clear();
                 }).caught(function (e) {
-                    console.warn(e);
+                    console.warn(e.stack);
                     _this7._clear();
                 });
             } else {
@@ -715,22 +712,30 @@ var _FlowGraph = function () {
 
             var node = this.nodeFromUuid(uuid);
 
-            if (!node.isDirty()) return;
+            if (!node.isDirty()) return _bluebird2.default.resolve(false);
 
             node.markDirty(false);
 
-            return _bluebird2.default.map(this.inputs.get(uuid), function (id) {
+            return _bluebird2.default.map(this.inputs.get(uuid).filter(function (uuid) {
+                return _this8.nodeFromUuid(uuid).isDirty();
+            }), function (id) {
                 return _this8._update(id);
             }).all()
             // then update node
             .then(function (res) {
-                var args = _this8.inputs.get(uuid).map(function (id) {
-                    return _this8.getNodeState(id);
-                });
-                // supporting asynchronous setState() functions
-                return _bluebird2.default.resolve(node.setState.apply(node, _toConsumableArray(args)));
-            }).caught(function (e) {
-                return console.warn(e);
+                var inputs = _this8.inputs.get(uuid);
+                var changed = inputs.length > 0 ? inputs.reduce(function (p, uuid, i, a) {
+                    return p || _this8.nodeFromUuid(uuid).changed;
+                }) : false;
+                if (changed) {
+                    var args = inputs.map(function (id) {
+                        return _this8.getNodeState(id);
+                    });
+                    // supporting asynchronous setState() functions
+                    return _bluebird2.default.resolve(node.setState.apply(node, args));
+                }
+                node.changed = false;
+                return _bluebird2.default.resolve(false);
             });
         }
 
@@ -749,16 +754,25 @@ var _FlowGraph = function () {
             var _this9 = this;
 
             var node = this.nodeFromUuid(uuid);
+            if (!node.isDirty()) return false;
             node.markDirty(false);
-            this.inputs.get(uuid).filter(function (id) {
+            var upstream = this.inputs.get(uuid).filter(function (id) {
                 return _this9.nodeFromUuid(id).isDirty();
-            }).forEach(function (id) {
+            }).map(function (id) {
                 return _this9._updateSync(id);
             });
-            var args = this.inputs.get(uuid).map(function (id) {
-                return _this9.getNodeState(id);
-            });
-            node.setState.apply(node, _toConsumableArray(args));
+            var inputs = this.inputs.get(uuid);
+            var changed = inputs.length > 0 ? inputs.reduce(function (p, uuid, i, a) {
+                return p || _this9.nodeFromUuid(uuid).changed;
+            }) : false;
+            if (changed) {
+                var args = inputs.map(function (id) {
+                    return _this9.getNodeState(id);
+                });
+                return node.setState.apply(node, _toConsumableArray(args));
+            }
+            node.changed = false;
+            return false;
         }
 
         /**
@@ -929,6 +943,11 @@ function NodeConstructor() {
         writable: true,
         value: initialState
     });
+    Object.defineProperty(this, 'changed', {
+        writable: true,
+        value: false
+    });
+
     if (register) _flowgraph2.default.register(this);
 }
 
@@ -1207,7 +1226,7 @@ var FlowNode = function () {
          * @param args
          *        the input state objects
          * @return
-         *        this node
+         *        true iff state changed
          */
 
     }, {
@@ -1222,8 +1241,13 @@ var FlowNode = function () {
             })) {
                 console.warn('setState(...): Inconsistent state ' + 'detected, make sure transforms are correct.\n                ' + ('inputs: ' + args));
             }
-            this.state = args[0];
-            return this;
+            if (!(0, _isEqual2.default)(this.state, args[0])) {
+                this.state = args[0];
+                this.changed = true;
+                return true;
+            }
+            this.changed = false;
+            return false;
         }
 
         /**
@@ -1301,7 +1325,7 @@ var Transformer = exports.Transformer = function (_FlowNode) {
      * @param args
      *        the input state objects
      * @return
-     *        this
+     *        true iff state changed
      */
 
     _createClass(Transformer, [{
@@ -1311,8 +1335,14 @@ var Transformer = exports.Transformer = function (_FlowNode) {
                 args[_key7] = arguments[_key7];
             }
 
-            this.state = this.fn.apply(this, args);
-            return this;
+            var state = this.fn.apply(this, args);
+            if (!(0, _isEqual2.default)(this.state, state)) {
+                this.state = state;
+                this.changed = true;
+                return true;
+            }
+            this.changed = false;
+            return false;
         }
     }]);
 

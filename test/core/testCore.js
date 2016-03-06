@@ -76,15 +76,16 @@ describe('#Ciril', function () {
         it('Unbound nodes should not update', function () {
             node.unbind(xf);
             xf.unbind(node2);
-            return node.setState(1).update().then(function () {
+            node.setState(1);
+            return node.update().then(function () {
                 expect(node.getState()).to.equal(1);
                 expect(node2.getState()).to.equal(4);
                 xf.bindInputs(node).bind(node2);
-                return node.update().then(function () {
-                    expect(node.getState()).to.equal(1);
-                    expect(node2.getState()).to.equal(2);
-                });
-            }).then();
+                return node.update()
+            }).then(function () {
+                expect(node.getState()).to.equal(1);
+                expect(node2.getState()).to.equal(2);
+            });
         });
     });
 
@@ -92,8 +93,7 @@ describe('#Ciril', function () {
         it('Desynchronized nodes should not update', function () {
             Ciril.desynchronize(node, xf, node2, xf2);
             node2.setState(8);
-            return node2.update()
-            .then(function () {
+            return node2.update().then(function () {
                 expect(node.getState()).to.equal(1);
                 expect(node2.getState()).to.equal(8);
             });

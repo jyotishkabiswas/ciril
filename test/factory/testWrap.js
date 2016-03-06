@@ -60,7 +60,8 @@ describe('#Ciril.wrap()', function () {
 
     it('Wrapper should inherit FlowNode prototype', function () {
         expect(wrapped.isRegistered()).to.be.true;
-        return wrapped.setState("hi again!").update().then(function () {
+        wrapped.setState("hi again!")
+        return wrapped.update().then(function () {
             expect(wrapped.getState()).to.equal("hi again!");
         });
     });
@@ -69,7 +70,8 @@ describe('#Ciril.wrap()', function () {
         wrappedState = wrap(state);
         expect(wrappedState instanceof FlowNode);
         expect(wrappedState.getState()).to.equal(state);
-        return wrappedState.setState({field: "Another state"}).update().then(function () {
+        wrappedState.setState({field: "Another state"})
+        return wrappedState.update().then(function () {
             expect(wrappedState.getState().field).to.equal("Another state");
         });
     });

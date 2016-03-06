@@ -71,6 +71,11 @@ export function NodeConstructor(initialState=null, register=true) {
         writable: true,
         value: initialState
     });
+    Object.defineProperty(this, 'changed', {
+        writable: true,
+        value: false
+    })
+
     if (register)
         FlowGraph.register(this);
 }
@@ -274,7 +279,7 @@ export default class FlowNode {
      * @param args
      *        the input state objects
      * @return
-     *        this node
+     *        true iff state changed
      */
     setState(...args) {
         if (!args.reduce((p, c, i, a) => {
@@ -284,8 +289,13 @@ export default class FlowNode {
                 `detected, make sure transforms are correct.
                 ` + `inputs: ${args}`);
         }
-        this.state = args[0];
-        return this;
+        if (!isEqual(this.state, args[0])) {
+            this.state = args[0]
+            this.changed = true
+            return true
+        }
+        this.changed = false
+        return false
     }
 
     /**
@@ -347,10 +357,16 @@ export class Transformer extends FlowNode {
      * @param args
      *        the input state objects
      * @return
-     *        this
+     *        true iff state changed
      */
     setState(...args) {
-        this.state = this.fn.apply(this, args);
-        return this;
+        let state = this.fn.apply(this, args)
+        if (!isEqual(this.state, state)) {
+            this.state = state
+            this.changed = true
+            return true
+        }
+        this.changed = false
+        return false
     }
 }
